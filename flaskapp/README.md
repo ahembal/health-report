@@ -23,6 +23,10 @@ python3 app.py <output.csv>
 
 Then open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser.
 
+## Screenshot
+
+![Service Health Timeline](docs/screenshot.jpg)
+
 ## Features
 
 - One timeline bar per service
