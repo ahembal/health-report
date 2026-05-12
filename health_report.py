@@ -1,11 +1,12 @@
 import argparse
 import csv
 from itertools import groupby
+from typing import Optional
 
 VALID_STATUSES = {'UP', 'DOWN', 'UNKNOWN'}
 
 
-def validate_status(row, on_invalid):
+def validate_status(row: dict, on_invalid: str) -> Optional[dict]:
     """Returns the row with a valid status, or None if it should be skipped.
 
     on_invalid='skip'    — skip the row and print a warning
@@ -27,10 +28,10 @@ def validate_status(row, on_invalid):
 class CSVReader:
     """Reads ping data from a CSV file."""
 
-    def __init__(self, path):
+    def __init__(self, path: str) -> None:
         self.path = path
 
-    def read(self):
+    def read(self) -> list[dict]:
         """Returns a list of ping dicts with timestamp, service_id, and status."""
         with open(self.path, newline='') as f:
             return [
@@ -46,10 +47,10 @@ class CSVReader:
 class DBReader:
     """Reads ping data from a relational database via a DB-API 2.0 connection."""
 
-    def __init__(self, connection):
+    def __init__(self, connection) -> None:
         self.connection = connection
 
-    def read(self):
+    def read(self) -> list[dict]:
         """Returns a list of ping dicts with timestamp, service_id, and status."""
         cursor = self.connection.cursor()
         cursor.execute("SELECT timestamp, service_id, status FROM pings")
@@ -57,7 +58,7 @@ class DBReader:
         return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
 
-def resolve_unknowns(pings):
+def resolve_unknowns(pings: list[dict]) -> list[dict]:
     """Resolves UNKNOWN statuses by inheriting the next known status. Trailing UNKNOWNs are dropped."""
     statuses = [p['status'] for p in pings]
     n = len(statuses)
@@ -78,7 +79,7 @@ def resolve_unknowns(pings):
     ]
 
 
-def resolve_unknowns_reversed(pings):
+def resolve_unknowns_reversed(pings: list[dict]) -> list[dict]:
     """Resolves UNKNOWN statuses by inheriting the next known status. Trailing UNKNOWNs are dropped."""
     updated_pings = []
     known_status = None
@@ -90,7 +91,7 @@ def resolve_unknowns_reversed(pings):
     return list(reversed(updated_pings))
 
 
-def build_intervals(pings):
+def build_intervals(pings: list[dict]) -> list[dict]:
     """Converts a chronologically sorted list of pings into status intervals."""
     intervals = []
     if not pings:
@@ -118,7 +119,7 @@ def build_intervals(pings):
     return intervals
 
 
-def build_intervals_with_groupby(pings):
+def build_intervals_with_groupby(pings: list[dict]) -> list[dict]:
     """Alternative implementation of build_intervals using itertools.groupby.
     groupby gives us consecutive groups of pings with the same status,
     so we can directly build intervals from these groups."""
@@ -135,7 +136,7 @@ def build_intervals_with_groupby(pings):
     return result
 
 
-def process(reader, output_path, on_invalid='skip', resolve_strategy='reversed', interval_strategy='groupby'):
+def process(reader, output_path: str, on_invalid: str = 'skip', resolve_strategy: str = 'reversed', interval_strategy: str = 'groupby') -> None:
     """Reads pings via the injected reader, computes intervals, and writes them to a CSV file.
 
     The reader can be any object with a read() method — CSVReader, DBReader, or any other source.
