@@ -1,13 +1,26 @@
 import csv
 import sys
+import json
 import logging
+import time
 from datetime import datetime, timezone
 from flask import Flask, render_template
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s %(message)s',
-)
+
+class JSONFormatter(logging.Formatter):
+    """Formats log records as JSON for machine-readable structured logging."""
+
+    def format(self, record):
+        return json.dumps({
+            'timestamp': int(time.time()),
+            'level': record.levelname,
+            'message': record.getMessage(),
+        })
+
+
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
+logging.basicConfig(level=logging.INFO, handlers=[handler])
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
@@ -71,7 +84,7 @@ def compute_segments(services):
         for interval in intervals:
             start = interval['start_time']
             end = interval['end_time'] if interval['end_time'] != -1 else t_max
-            ongoing = interval['end_time'] == -1
+            unknown_end = interval['end_time'] == -1
             span = end - start
             total_time += span
             if interval['status'] == 'UP':
@@ -81,7 +94,7 @@ def compute_segments(services):
                 'width': (end - start) / total * 100,
                 'status': interval['status'],
                 'start_fmt': fmt(start),
-                'end_fmt': '-1' if ongoing else fmt(end),
+                'end_fmt': 'unknown' if unknown_end else fmt(end),
                 'duration': duration(span),
             })
         up_pct = round(up_time / total_time * 100, 1) if total_time else 0

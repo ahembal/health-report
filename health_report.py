@@ -1,13 +1,26 @@
 import argparse
 import csv
+import json
 import logging
+import time
 from itertools import groupby
 from typing import Optional
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s %(message)s',
-)
+
+class JSONFormatter(logging.Formatter):
+    """Formats log records as JSON for machine-readable structured logging."""
+
+    def format(self, record):
+        return json.dumps({
+            'timestamp': int(time.time()),
+            'level': record.levelname,
+            'message': record.getMessage(),
+        })
+
+
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
+logging.basicConfig(level=logging.INFO, handlers=[handler])
 logger = logging.getLogger(__name__)
 
 VALID_STATUSES = {'UP', 'DOWN', 'UNKNOWN'}
