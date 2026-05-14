@@ -1,14 +1,21 @@
 import csv
 import sys
+import logging
 from datetime import datetime, timezone
 from flask import Flask, render_template
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(message)s',
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
 
 def fmt(ts):
     """Converts a Unix timestamp to a human-readable UTC datetime string."""
-    return datetime.fromtimestamp(ts, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+    return datetime.fromtimestamp(ts, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
 
 
 def duration(seconds):
@@ -40,6 +47,7 @@ def load_intervals(path):
                 'end_time': int(row['end_time']),
                 'status': row['status'],
             })
+    logger.info('Loaded %d services from %s', len(services), path)
     return services
 
 
@@ -73,7 +81,7 @@ def compute_segments(services):
                 'width': (end - start) / total * 100,
                 'status': interval['status'],
                 'start_fmt': fmt(start),
-                'end_fmt': 'ongoing' if ongoing else fmt(end),
+                'end_fmt': '-1' if ongoing else fmt(end),
                 'duration': duration(span),
             })
         up_pct = round(up_time / total_time * 100, 1) if total_time else 0
@@ -95,4 +103,4 @@ if __name__ == '__main__':
         print(f'Usage: python3 {sys.argv[0]} <output.csv>')
         sys.exit(1)
     app.config['OUTPUT_CSV'] = sys.argv[1]
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False, port=5001)

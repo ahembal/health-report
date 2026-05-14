@@ -1,7 +1,14 @@
 import argparse
 import csv
+import logging
 from itertools import groupby
 from typing import Optional
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(message)s',
+)
+logger = logging.getLogger(__name__)
 
 VALID_STATUSES = {'UP', 'DOWN', 'UNKNOWN'}
 
@@ -15,12 +22,12 @@ def validate_status(row: dict, on_invalid: str) -> Optional[dict]:
     if row['status'] in VALID_STATUSES:
         return row
     if on_invalid == 'skip':
-        print(f"Warning: skipping row with invalid status '{row['status']}' "
-              f"(service_id={row['service_id']}, timestamp={row['timestamp']})")
+        logger.warning("Skipping row with invalid status '%s' (service_id=%s, timestamp=%s)",
+                       row['status'], row['service_id'], row['timestamp'])
         return None
     if on_invalid == 'unknown':
-        print(f"Warning: treating invalid status '{row['status']}' as UNKNOWN "
-              f"(service_id={row['service_id']}, timestamp={row['timestamp']})")
+        logger.warning("Treating invalid status '%s' as UNKNOWN (service_id=%s, timestamp=%s)",
+                       row['status'], row['service_id'], row['timestamp'])
         return {**row, 'status': 'UNKNOWN'}
     raise ValueError(f"Invalid status '{row['status']}' at timestamp {row['timestamp']}")
 
@@ -117,7 +124,6 @@ def build_intervals(pings: list[dict]) -> list[dict]:
     })
 
     return intervals
-
 
 def build_intervals_with_groupby(pings: list[dict]) -> list[dict]:
     """Alternative implementation of build_intervals using itertools.groupby.
